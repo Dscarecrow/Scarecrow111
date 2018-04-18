@@ -1,0 +1,430 @@
+#include<stdio.h>
+#include<iostream>
+struct process
+{
+int pid;
+int btime;
+int wtime;
+int ttime;
+int prtime;
+} p[10];
+main()
+{
+int i,j,k,n,ttur,twat,temppro,tempburst,temppir;
+float awat,atur;
+printf("Enter no. of process :");
+scanf("%d", &n);
+for(i=0; i<n; i++)
+{
+printf("\nBurst time for process P%d (in ms) :",(i+1));
+scanf("\t%d", &p[i].btime);
+printf("\n Enter priority\t");
+scanf("%d",&p[i].prtime);
+p[i].pid = i+1;
+}
+for(i=0;i<n;i++)
+{
+for(j=i+1;p[j].prtime;)
+{
+tempburst=p[i].btime;
+p[i].btime=p[j].btime;
+p[j].btime=tempburst;
+temppro=p[i].pid;
+p[i].pid=p[j].pid;
+p[j].pid=temppro;
+temppir=p[i].prtime;
+p[i].prtime=p[j].prtime;
+p[j].prtime=temppir;
+}
+}
+p[0].wtime = 0;
+for(i=0; i<n; i++)
+{
+p[i+1].wtime = p[i].wtime + p[i].btime;
+p[i].ttime = p[i].wtime + p[i].btime;
+}
+ttur = twat = 0;
+for(i=0; i<n; i++)
+{
+ttur+=p[i].ttime;
+twat+=p[i].wtime;
+}
+awat = (float)twat/n;
+atur = (float)ttur/n;
+
+printf("\n priority Scheduling ALGORITHM \n\n");
+for(i=0; i<38; i++)
+printf("-");
+printf("\n Process B-Time T-Time W-Time Priority\n");
+for(i=0; i<38; i++)
+printf("-");
+for(i=0; i<n; i++)
+printf("\n P%d\t%4d\t%3d\t%2d\t%d",p[i].pid,p[i].btime,p[i].ttime,p[i].wtime,p[i].prtime);
+printf("\n");
+for(i=0;i<38;i++)
+printf("-");
+printf("\n\nGANTT Chart\n");
+printf("-");
+for(i=0; i<(p[n-1].ttime + 2*n);i++)
+printf("-");
+printf("\n");
+printf("|");
+for(i=0;i<n;i++)
+{
+k = p[i].btime/2;
+for(j=0; j<k;j++)
+printf(" ");
+printf("P%d",p[i].pid);
+for(j=k+1;j<p[i].btime;j++)
+printf(" ");
+printf("|");
+}
+printf("\n");
+printf("-");
+for(i=0;i<(p[n-1].ttime + 2*n);i++)
+printf("-");
+printf("\n");
+printf("0");
+for(i=0;i<n;i++)
+{
+for(j=0;j<p[i].btime;j++)
+printf(" ");
+printf("%2d",p[i].ttime);
+}
+printf("\n\nAverage waiting time: %5.2fms", awat);
+printf("\nAverage turn around time : %5.2fms\n", atur);
+}
+
+
+
+
+#include<stdio.h>
+#include<unistd.h>
+#include<stdlib.h>
+#include<malloc.h>
+#include<time.h>
+#include<pthread.h>
+#include<semaphore.h>
+struct Process {
+	int time,Atime,Btime,id;
+	clock_t arrival;
+	int flag,completed,p;
+	sem_t se;
+	struct Process *next;
+};
+int i=0,k=0;
+typedef struct Process node;
+clock_t start;
+float TAT=0,WT=0;
+node *sp1=NULL,*sp2=NULL,*temp;
+void *processor(node *S) {
+	
+	clock_t count;
+	while(1) {
+		sem_wait(&S->se);
+		if((S->Atime<=(clock()-start)/CLOCKS_PER_SEC && S->p==1)) {
+			S->p=0;
+			count=clock();
+		}
+		if(S->flag==1) {
+			printf("\nProcess-%d Running \nTimer :%d",S->id,(clock()-start)/CLOCKS_PER_SEC);
+			S->flag=0;
+			S->arrival=clock();
+		}
+		if((clock()-count)/CLOCKS_PER_SEC==1) {
+			count=clock();
+			printf("\nTimer :%d",(clock()-start)/CLOCKS_PER_SEC);
+			S->time-=1;
+			if(S->time==0) {
+				TAT+=(clock()-start)/CLOCKS_PER_SEC-S->Atime;
+				WT+=((clock()-start)/CLOCKS_PER_SEC)-S->Btime-S->Atime;
+				sleep(2);
+				node *start=sp2;
+				while(start!=NULL) {
+					if(start->next==S) {
+						start->next=S->next;
+						break;
+					}
+					if(sp2==S) {
+						sp2=sp2->next;
+						break;
+					}
+					start=start->next;
+				}
+				printf("\nProcess-%d Completed ",S->id);
+				if(sp2!=NULL){
+					printf("next Process-%d",sp2->id);
+				}
+				S->completed=7;
+				if(sp2!=NULL){
+					sem_post(&sp2->se);
+				}
+			}
+			}
+					if(S->completed==7) {
+			break;
+		}
+	sem_post(&S->se);
+	}
+} 
+void sort_burst(node *temp) {	//sort by burst time
+	node *start=sp2;
+	if(sp2==NULL) {
+		sp2=temp;
+		sp2->next=NULL;
+	}
+	else{
+	int t=temp->time;
+	if (start->time > t) {
+        	temp->next = sp2;
+        	sp2=temp;
+    	}
+    	else {
+        	while (start->next != NULL && start->next->time< t) {
+            		start = start->next;
+        	}
+        temp->next = start->next;
+        start->next = temp;
+    }
+	}
+}
+void sort_arrival() {
+	temp=(node *)malloc(sizeof(node));
+	printf("\nEnter Arrival Time of %d Process :",(i+1));
+	scanf("%d",&temp->Atime);
+	printf("Enter Burst Time :");
+	scanf("%d",&temp->time);
+	temp->id=i+1;
+	temp->p=1;
+	temp->flag=1;
+	temp->Btime=temp->time;
+	sem_init(&temp->se,0,0);
+	int t=temp->Atime;
+	node *start=sp1;
+	if (start->Atime > t) {
+        	temp->next = sp1;
+        	sp1=temp;
+    	}
+    	else {
+        	while (start->next != NULL && start->next->Atime < t) {
+            		start = start->next;
+        	}
+        temp->next = start->next;
+        start->next = temp;
+    }
+}
+void main() {
+	printf("\t\t\t\t\t\t\t\t\t\t\t*********Shortest Job First**********\n");
+	int n,l=1;
+	pthread_t p[10];
+	printf("\nEnter No.of Processes :");
+	scanf("%d",&n);
+	while(i<n) {
+		if(sp1==NULL) {
+			sp1=(node *)malloc(sizeof(node));
+			printf("Enter Arrival Time of %d Process :",(i+1));
+			scanf("%d",&sp1->Atime);
+			printf("Enter Burst Time :");
+			scanf("%d",&sp1->time);
+			sp1->id=i+1;
+			sp1->flag=1;
+			sp1->p=1;
+			sp1->Btime=sp1->time;
+			sem_init(&sp1->se,0,0);
+			sp1->next=NULL;
+		}
+		else {
+			sort_arrival();
+		}
+		i++;
+	}
+	i=0;
+	system("cls");
+	printf("\t\t\t\t\t\t\t\t\t\t\t\t\**********PROCESSOR************\n\n");
+	start=clock();
+	while(i<n) {
+		temp=sp1;	
+		if(temp->Atime<=0) {
+			printf("Process-%d is Dicarded Due to Incorrect Arrival Time\n",temp->id);
+			sp1=temp->next;
+			temp=sp1;
+			i++;
+		}
+		if(l==1) {
+				l=0;
+				sem_post(&temp->se);
+			}
+		if((clock()-start)/CLOCKS_PER_SEC==temp->Atime) {
+			printf("Process-%d is created\n",temp->id);
+			pthread_create(&p[i],NULL,processor,temp);
+			sp1=sp1->next;
+			sort_burst(temp);
+			i++;
+		}
+	}
+	for(i=0;i<n;i++) {
+		pthread_join(p[i],NULL);
+	}
+	printf("\nAverage Waiting Time :%f\nAverage Turn Around Time :%f",(float)WT/n,(float)TAT/n);
+}
+
+
+
+
+#include<stdio.h>
+int main()
+{
+    int bt[20],p[20],wt[20],tat[20],i,j,n,total=0,pos,temp;
+    float avg_wt,avg_tat;
+
+
+    FILE *fptr;
+    int num[5];
+
+    fptr = fopen("CPU_BURST.txt", "r");
+
+    if (fptr == NULL)
+    {
+        printf("Can't open file for reading.\n");
+    }
+    else
+    {
+        fscanf(fptr, "%d", &num[0]);
+        fscanf(fptr, "%d", &num[1]);
+        fscanf(fptr, "%d", &num[2]);
+        fscanf(fptr, "%d", &num[3]);
+        fscanf(fptr, "%d", &num[4]);
+	
+        fclose(fptr);
+    }
+
+
+
+
+printf("\nProcess        BurstTime");
+ for(i=0;i<5;i++)
+ {
+ 	bt[i]=num[i];
+ 	printf("\nP%d \t\t %3d",i+1,bt[i]);
+ 	
+ }
+
+    //sorting burst time in ascending order using selection sort
+    for(i=0;i<5;i++)
+    {
+    //	printf("2");
+        pos=i;
+        for(j=i+1;j<5;j++)
+        {
+            if(bt[j]<bt[pos])
+                pos=j;
+        }
+ 
+        temp=bt[i];
+        bt[i]=bt[pos];
+        bt[pos]=temp;
+ 
+        temp=p[i];
+        p[i]=p[pos];
+        p[pos]=temp;
+    }
+ 
+    wt[0]=0;            //waiting time for first process will be zero
+ 
+    //calculate waiting time
+    for(i=1;i<5;i++)
+    { 
+        wt[i]=0;
+        for(j=0;j<i;j++)
+            wt[i]+=bt[j];
+ 
+        total+=wt[i];
+    }
+ 
+    avg_wt=(float)total/5;      //average waiting time
+    total=0;
+ 
+    printf("\n\nProcess\t    Burst Time    \tWaiting Time\tTurnaround Time");
+    for(i=0;i<5;i++)
+    { 
+        tat[i]=bt[i]+wt[i];     //calculate turnaround time
+        total+=tat[i];
+        printf("\nP%d\t\t %d\t\t  %d\t\t\t%d",i+1,bt[i],wt[i],tat[i]);
+    }
+ 
+    avg_tat=(float)total/5;     //average turnaround time
+    printf("\n\nAverage Waiting Time=%.2f",avg_wt);
+    printf("\nAverage Turnaround Time=%.2f\n",avg_tat);
+}
+
+
+
+
+
+#include<iostream>
+#include<conio.h>
+using namespace std;
+int main()
+ {
+ 	  int at[100], bt[100]; // at= arrival time , bt= burst time 
+	  int temp[100]; 
+      int i, time, n;
+	  int smallest, count = 0;
+      double wait_time = 0;
+	  double turnaround_time = 0, end;
+      float average_waiting_time;
+	  float average_turnaround_time;
+	  cout<<"\t\t\t\t\t\t~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+	  cout<<"\t\t\t\t\t\t\t\t >>>>> OPERATING SYSTEM PROJECT <<<<<\n";
+	  cout<<"\t\t\t\t\t\t~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+	  cout<<" \n PROBLEM:   A uniprocessor system has n number of CPU intensive processes, each process has its own requirement of CPU burst." ;
+	  cout<< "The process with lowest CPU burst is given the highest priority. A late-arriving higher priority process can preempt";
+	  cout<< "a currently running process with lower priority.Simulate a scheduler that is scheduling the processes in such a way";
+	  cout<< "that higher priority process is never starved due to the execution of lower priority process. What should be its"; 
+      cout<< "average waiting time and average turnaround time if  two processes are arriving at same time  ";
+ 	  cout<<"\n \n-->>Enter the Total Number of Processes:";
+ 	  cin>>n;
+ 	  cout<<"\n -->> Enter Details of " <<n<<" Processes\n";
+ 	   for(i = 0; i < n; i++)
+      {
+            cout<<"\n -->>Enter Arrival Time:";
+            cin>>at[i];
+            cout<<" -->>Enter Burst Time:";
+            cin>>bt[i];
+            temp[i] = bt[i];
+      }
+ 
+ 
+  bt[9] = 100000;  
+      for(time = 0; count != n; time++)
+      {
+            smallest = 9;
+            for(i = 0; i < n; i++)
+            {
+                  if(at[i] <= time && bt[i] < bt[smallest] && bt[i] > 0)
+                  {
+                        smallest = i;
+                  }
+            }
+            bt[smallest]--;
+            if(bt[smallest] == 0)
+            {
+                  count++;
+                  end = time + 1;
+                  wait_time = wait_time + end - at[smallest] - temp[smallest];
+                  turnaround_time = turnaround_time + end - at[smallest];
+            }
+      }
+        
+        
+        
+        
+        average_waiting_time = wait_time / n; 
+        average_turnaround_time = turnaround_time / n;
+        cout<<"\t\t\t\t\t\t~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+        cout<<"\n\n Average Waiting Time:"<< average_waiting_time<<"\n";
+		cout<<"Average Turnaround Time:"<<average_turnaround_time<< "\n";
+		return 0;
+	}
+      
+      
